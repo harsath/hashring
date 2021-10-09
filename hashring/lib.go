@@ -1,6 +1,10 @@
 package hashring
 
-import "github.com/google/uuid"
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
 
 type nodeHolder struct {
 	uuid_node   uuid.UUID
@@ -46,8 +50,25 @@ func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
 /**
 Remove a node from the cluster
 node_uuid Node to remove from the cluster
+It returns the successor UUID in the hashring
 */
-func (hash_ring *HashRing) Remove(node_uuid uuid.UUID) {}
+func (hash_ring *HashRing) Remove(node_uuid uuid.UUID) (uuid.UUID, error) {
+	var index_remove int = -1
+	for index := 0; index < len(hash_ring.node_holder); index++ {
+		if hash_ring.node_holder[index].uuid_node.ID() == node_uuid.ID() {
+			index_remove = index
+			break
+		}
+	}
+	if index_remove < 0 {
+		return uuid.UUID{}, errors.New("Input UUID is invalid")
+	}
+	temp_node_holder := make([]nodeHolder, 0)
+	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[:index_remove]...)
+	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[index_remove+1:]...)
+	hash_ring.node_holder = temp_node_holder
+	return hash_ring.node_holder[index_remove].uuid_node, nil
+}
 
 /**
 Find a spot for the input BLOB
