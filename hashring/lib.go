@@ -75,7 +75,13 @@ Find a spot for the input BLOB
 blob_data Input BLOB, which is not hashed. So, we first need to hash it and find the spot
 */
 func (hash_ring *HashRing) FindSpot(blob_data []byte) uuid.UUID {
-	var current_index int = hash_ring.current_size / 2
+	var blob_hash int = int(hash_ring.hashByte(blob_data)) % 360
+	for i := 0; i < len(hash_ring.node_holder); i++ {
+		if hash_ring.node_holder[i].radian_node > blob_hash {
+			return hash_ring.node_holder[i].uuid_node
+		}
+	}
+	return hash_ring.node_holder[0].uuid_node
 }
 
 func (hash_ring *HashRing) hashUUID(node_uuid uuid.UUID) uint64 {
@@ -84,6 +90,20 @@ func (hash_ring *HashRing) hashUUID(node_uuid uuid.UUID) uint64 {
 	index := 0
 	for char := node_uuid[index]; ; {
 		if index == len(node_uuid) {
+			break
+		}
+		hash = ((hash << 5) + hash) + uint64(char)
+		index++
+	}
+	return hash
+}
+
+func (hash_ring *HashRing) hashByte(blob_data []byte) uint64 {
+	// djb2 hashing
+	var hash uint64 = 5381
+	index := 0
+	for char := blob_data[index]; ; {
+		if index == len(blob_data) {
 			break
 		}
 		hash = ((hash << 5) + hash) + uint64(char)
