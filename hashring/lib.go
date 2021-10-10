@@ -2,13 +2,14 @@ package hashring
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 )
 
 type nodeHolder struct {
 	uuid_node   uuid.UUID
-	radian_node int
+	radian_node uint
 }
 
 type HashRing struct {
@@ -23,7 +24,8 @@ It returns the successor node, such that an implementation which uses this will
 make move operation of the BLOBs stored in the other server.
 */
 func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
-	var uuid_hash_output int = int(hash_ring.hashUUID(node_uuid)) % 360
+	var uuid_hash_output uint = uint(hash_ring.hashUUID(node_uuid)) % 360
+	fmt.Println("UUID Hash: ", uuid_hash_output)
 	var stop_index int = 0
 	for stop_index < len(hash_ring.node_holder) {
 		if uuid_hash_output <= hash_ring.node_holder[stop_index].radian_node {
@@ -31,11 +33,20 @@ func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
 		}
 		stop_index++
 	}
+	fmt.Println("stop_index: ", stop_index)
 	// Input UUID's hash is the largest, hence we insert at the end
 	if stop_index == len(hash_ring.node_holder) {
 		hash_ring.node_holder = append(hash_ring.node_holder,
 			nodeHolder{uuid_node: node_uuid, radian_node: uuid_hash_output})
 		return hash_ring.node_holder[0].uuid_node
+	}
+	if stop_index == 0 {
+		temp_node_holder := make([]nodeHolder, 0)
+		temp_node_holder = append(temp_node_holder,
+			nodeHolder{uuid_node: node_uuid, radian_node: uuid_hash_output})
+		temp_node_holder = append(temp_node_holder, hash_ring.node_holder[:]...)
+		hash_ring.node_holder = temp_node_holder
+		return hash_ring.node_holder[1].uuid_node
 	}
 	// Insert at the 'stop_index' spot
 	temp_node_holder := make([]nodeHolder, 0)
@@ -75,7 +86,7 @@ Find a spot for the input BLOB
 blob_data Input BLOB, which is not hashed. So, we first need to hash it and find the spot
 */
 func (hash_ring *HashRing) FindSpot(blob_data []byte) uuid.UUID {
-	var blob_hash int = int(hash_ring.hashByte(blob_data)) % 360
+	var blob_hash uint = uint(hash_ring.hashByte(blob_data)) % 360
 	for i := 0; i < len(hash_ring.node_holder); i++ {
 		if hash_ring.node_holder[i].radian_node > blob_hash {
 			return hash_ring.node_holder[i].uuid_node
