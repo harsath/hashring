@@ -117,7 +117,6 @@ func (hash_ring *HashRing) hashUUID(node_uuid uuid.UUID) uint64 {
 }
 
 func (hash_ring *HashRing) hashByte(blob_data []byte) uint64 {
-	// djb2 hashing
 	var hash uint64 = 5381
 	index := 0
 	for char := blob_data[index]; ; {
