@@ -3,6 +3,8 @@ package hashring
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -25,7 +27,6 @@ make move operation of the BLOBs stored in the other server.
 */
 func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
 	var uuid_hash_output uint = uint(hash_ring.hashUUID(node_uuid)) % 360
-	fmt.Println("UUID Hash: ", uuid_hash_output)
 	var stop_index int = 0
 	for stop_index < len(hash_ring.node_holder) {
 		if uuid_hash_output <= hash_ring.node_holder[stop_index].radian_node {
@@ -33,9 +34,8 @@ func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
 		}
 		stop_index++
 	}
-	fmt.Println("stop_index: ", stop_index)
 	// Input UUID's hash is the largest, hence we insert at the end
-	if stop_index == len(hash_ring.node_holder) {
+	if stop_index == (len(hash_ring.node_holder) - 1) {
 		hash_ring.node_holder = append(hash_ring.node_holder,
 			nodeHolder{uuid_node: node_uuid, radian_node: uuid_hash_output})
 		return hash_ring.node_holder[0].uuid_node
@@ -46,6 +46,9 @@ func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
 			nodeHolder{uuid_node: node_uuid, radian_node: uuid_hash_output})
 		temp_node_holder = append(temp_node_holder, hash_ring.node_holder[:]...)
 		hash_ring.node_holder = temp_node_holder
+		if len(hash_ring.node_holder) == 1 {
+			return hash_ring.node_holder[0].uuid_node
+		}
 		return hash_ring.node_holder[1].uuid_node
 	}
 	// Insert at the 'stop_index' spot
@@ -53,9 +56,9 @@ func (hash_ring *HashRing) Add(node_uuid uuid.UUID) uuid.UUID {
 	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[:stop_index]...)
 	temp_node_holder = append(temp_node_holder,
 		nodeHolder{uuid_node: node_uuid, radian_node: uuid_hash_output})
-	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[stop_index+1:]...)
+	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[stop_index:]...)
 	hash_ring.node_holder = temp_node_holder
-	return hash_ring.node_holder[stop_index+1].uuid_node
+	return hash_ring.node_holder[stop_index].uuid_node
 }
 
 /**
@@ -86,7 +89,11 @@ Find a spot for the input BLOB
 blob_data Input BLOB, which is not hashed. So, we first need to hash it and find the spot
 */
 func (hash_ring *HashRing) FindSpot(blob_data []byte) uuid.UUID {
-	var blob_hash uint = uint(hash_ring.hashByte(blob_data)) % 360
+	rando_seed := rand.NewSource(time.Now().UnixNano())
+	rand_one := rand.New(rando_seed)
+	// var blob_hash uint = uint(hash_ring.hashByte(blob_data)) % 360
+	var blob_hash uint = uint(rand_one.Intn(360))
+	fmt.Println("GIVEN BLOB hash: ", blob_hash)
 	for i := 0; i < len(hash_ring.node_holder); i++ {
 		if hash_ring.node_holder[i].radian_node > blob_hash {
 			return hash_ring.node_holder[i].uuid_node
