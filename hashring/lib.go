@@ -13,7 +13,7 @@ type nodeHolder struct {
 }
 
 type HashRing struct {
-	// TODO: It's better to store them in a BST with radian_node as the key
+	// NOTE: It's better to store them in a BST with radian_node as the key
 	node_holder []nodeHolder
 }
 
