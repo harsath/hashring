@@ -52,6 +52,26 @@ func TestAdd(t *testing.T) {
 	fmt.Println("UUID of 6nd server: ",
 		hash_ring.node_holder[5].uuid_node)
 	blob_one := []byte("Hello world, this is bytes!")
-	spot_one_uuid := hash_ring.FindSpot(blob_one)
+	spot_one_uuid, err := hash_ring.FindSpot(blob_one)
 	fmt.Println("blob_one spot: ", spot_one_uuid)
+	successor, err := hash_ring.Remove(server_four_uuid)
+	fmt.Println("Removed 1:", server_four_uuid, "\nSuccessor:", successor)
+	if err != nil {
+		t.Error(err)
+	}
+	successor, err = hash_ring.Remove(server_two_uuid)
+	fmt.Println("Removed 2:", server_two_uuid, "\nSuccessor:", successor)
+	if err != nil {
+		t.Error(err)
+	}
+	successor, err = hash_ring.Remove(server_one_uuid)
+	fmt.Println("Removed 3:", server_one_uuid, "\nSuccessor:", successor)
+	if err != nil {
+		t.Error(err)
+	}
+	successor, err = hash_ring.Remove(server_five_uuid)
+	fmt.Println("Removed 4:", server_five_uuid, "\nSuccessor:", successor)
+	if err != nil {
+		t.Error(err)
+	}
 }

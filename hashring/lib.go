@@ -3,8 +3,6 @@ package hashring
 import (
 	"errors"
 	"fmt"
-	"math/rand"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -77,6 +75,10 @@ func (hash_ring *HashRing) Remove(node_uuid uuid.UUID) (uuid.UUID, error) {
 	if index_remove < 0 {
 		return uuid.UUID{}, errors.New("Input UUID is invalid")
 	}
+	if len(hash_ring.node_holder)-1 == index_remove {
+		hash_ring.node_holder = hash_ring.node_holder[:len(hash_ring.node_holder)-1]
+		return hash_ring.node_holder[0].uuid_node, nil
+	}
 	temp_node_holder := make([]nodeHolder, 0)
 	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[:index_remove]...)
 	temp_node_holder = append(temp_node_holder, hash_ring.node_holder[index_remove+1:]...)
@@ -88,18 +90,18 @@ func (hash_ring *HashRing) Remove(node_uuid uuid.UUID) (uuid.UUID, error) {
 Find a spot for the input BLOB
 blob_data Input BLOB, which is not hashed. So, we first need to hash it and find the spot
 */
-func (hash_ring *HashRing) FindSpot(blob_data []byte) uuid.UUID {
-	rando_seed := rand.NewSource(time.Now().UnixNano())
-	rand_one := rand.New(rando_seed)
-	// var blob_hash uint = uint(hash_ring.hashByte(blob_data)) % 360
-	var blob_hash uint = uint(rand_one.Intn(360))
+func (hash_ring *HashRing) FindSpot(blob_data []byte) (uuid.UUID, error) {
+	if len(hash_ring.node_holder) < 0 {
+		return uuid.UUID{}, fmt.Errorf("hashring is empty")
+	}
+	var blob_hash uint = uint(hash_ring.hashByte(blob_data)) % 360
 	fmt.Println("GIVEN BLOB hash: ", blob_hash)
 	for i := 0; i < len(hash_ring.node_holder); i++ {
 		if hash_ring.node_holder[i].radian_node > blob_hash {
-			return hash_ring.node_holder[i].uuid_node
+			return hash_ring.node_holder[i].uuid_node, nil
 		}
 	}
-	return hash_ring.node_holder[0].uuid_node
+	return hash_ring.node_holder[0].uuid_node, nil
 }
 
 func (hash_ring *HashRing) hashUUID(node_uuid uuid.UUID) uint64 {
